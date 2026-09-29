@@ -3,7 +3,7 @@ import argparse
 import time
 import glob
 from batchgenerators.utilities.file_and_folder_operations import load_json
-from utils.infer_utils import process_file
+from utils.infer_utils import process_file, cfg2model
 from utils.curation import logger_creation
 
 
@@ -31,9 +31,12 @@ def main(args):
     cfg_file = "cfg.json"
     cfg = load_json(cfg_file)
 
+    # Set up model object, common for all files to infer
+    model = cfg2model(cfg)
+
     # Process files in series
     for file in img_files:
-        process_file(file, outfolder, cfg)
+        process_file(file, outfolder, model)
 
 
 def get_args():
