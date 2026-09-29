@@ -92,7 +92,7 @@ def predict_file(file: str, model):
 
     # Heuristic to discard label files
     unique = np.unique(image_np)
-    is_label = np.issubdtype(image_np.dtype, np.integer) and len(unique) < 100
+    is_label = np.all(np.allclose(unique, np.round(unique)) and (unique < 100))
 
     if not (is_label):
         # Load image and enforce RAS orientation
@@ -149,7 +149,7 @@ def process_file(file: str, out: str, model):
                 image, centroid_info["centroids"], outfile.replace(".json", ".png"), cid
             )
             logger.info(
-                f"Elapsed location time for '{cid}' : {round(time.time()-t1,2)}"
+                f"Elapsed location time for '{cid}' : {round(time.time()-t1,2)} sec"
             )
         else:
             logger.info(f"File '{file}' seems to be a label file, skipping...")
