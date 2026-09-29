@@ -29,6 +29,34 @@ def load_image(file: str, arr: bool = False) -> sitk.Image:
     return image
 
 
+def load_orient_image(file: str, arr: bool = False, orient: str = "RAS") -> sitk.Image:
+    """
+    Load image with SimpleITK and orient it
+    Optionally load array, too
+
+    Params
+    ------
+    file : image file
+    arr : array
+    orient : orientation (default: "RAS")
+
+    """
+    orienter = sitk.DICOMOrientImageFilter()
+    orienter.SetDesiredCoordinateOrientation(orient)
+    try:
+        image = sitk.ReadImage(file)
+        image = orienter.Execute(image)
+    except:
+        # Load with nibabel
+        logger.error(f"Failed loading '{file}', trying with Nibabel...")
+        image = _load_with_nibabel(file)
+        image = orienter.Execute(image)
+    if arr:
+        img = sitk.GetArrayFromImage(image)
+        return image, img
+    return image
+
+
 def save_image(image: sitk.Image, file: str):
     """
     Save input image
@@ -161,3 +189,16 @@ def _load_with_nibabel(file: str) -> sitk.Image:
     image.SetOrigin(affine[:3, 3].tolist())
     image.SetDirection(direction.flatten().tolist())
     return image
+
+
+def extract_spacing_np(image: sitk.Image) -> list:
+    """
+    Extract spacing information in numpy convention (flipped w.r.t sitk)
+
+    Params
+    ------
+    image : input image
+
+    """
+    spacing = np.flip(np.array(image.GetSpacing())).tolist()
+    return spacing
