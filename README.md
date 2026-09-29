@@ -2,7 +2,7 @@
 
 Repo for lumbar vertebrae body center estimation, trained and internally tested on TotalSegmentator (https://zenodo.org/records/22688904) and externally tested on Verse (https://github.com/anjany/verse#data)
 
-#Installation instructions
+# Installation instructions
 
 ```
 conda create -n nnunet_assign python=3.11
@@ -13,7 +13,7 @@ pip install -e nnUNet
 pip install -r requirements.txt
 ```
 
-#Path setup
+# Path setup
 ```
 export nnUNet_raw=../converted_data
 export nnUNet_preprocessed=../preprocessed_data
@@ -22,7 +22,7 @@ export nnUNet_n_proc_DA=4
 ```
 
 
-#Datasets:
+# Datasets:
 
 TotalSegmentator (v300): https://zenodo.org/records/22688904
 
@@ -37,7 +37,7 @@ Download Verse in: ../raw_data/verse
 Unzip all related .zip files 
 
 
-#Docker (end-to-end inference)
+# Docker (end-to-end inference)
 
 Requires Docker with the NVIDIA container runtime (GPU needed). The trained model is copied into the image, so the image is self-contained.
 
@@ -78,7 +78,7 @@ docker run --rm --gpus all --entrypoint python lumbar-centers -c "import torch; 
 
 
 
-#Runs (step by step)
+# Runs (step by step)
 
 Curate Verse as imagesTs, labelsTs
 ```
