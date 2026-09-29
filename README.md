@@ -1,3 +1,5 @@
+# CT lumbar vertebrae body center extraction
+
 Repo for lumbar vertebrae body center estimation, trained and internally tested on TotalSegmentator (https://zenodo.org/records/22688904) and externally tested on Verse (https://github.com/anjany/verse#data)
 
 Installation instructions
@@ -23,11 +25,13 @@ export nnUNet_n_proc_DA=4
 Datasets:
 
 TotalSegmentator (v300): https://zenodo.org/records/22688904
+
 Verse (2019+2020): https://github.com/anjany/verse#data
 
 Download instructions:
 
 Download TotalSegmentator in: ../raw_data/totalsegmentator
+
 Download Verse in: ../raw_data/verse
 
 Unzip all related .zip files 
@@ -67,7 +71,6 @@ Curate TotalSegmentator as imagesTr, labelsTr, imagesTs\_totalsegmentator, label
 
 ```
 python curate_totalsegmentator.py --i ../raw_data/Totalsegmentator_dataset_v300 --orient RAS --o ../converted_data/Dataset000_lumbar
-
 ```
 
 nnU-Net-based preprocessing (parallel workers can be adjusted)
@@ -84,7 +87,6 @@ nnUNet-based training
 
 ```
 nnUNetv2_train 000 3d_fullres 0 -p nnUNetResEncUNetMPlans -tr nnUNetTrainer
-
 ```
 
 nnUNet-based prediction of internal TotalSegmentator test set and external Verse test set (WORKERS here set to 1, can be modified)
@@ -101,5 +103,26 @@ nnU-Net-based evaluation of internal TotalSegmentator test set and external Vers
 nnUNetv2_evaluate_folder ../converted_data/Dataset000_lumbar/labelsTs_totalsegmentator ../converted_data/Dataset000_lumbar/predsTs_totalsegmentator -djfile ../converted_data/Dataset000_lumbar/predsTs_totalsegmentator/dataset.json -pfile ../converted_data/Dataset000_lumbar/predsTs_totalsegmentator/plans.json -o ../converted_data/Dataset000_lumbar/predsTs_totalsegmentator/summary.json -np WORKERS 
 
 nnUNetv2_evaluate_folder ../converted_data/Dataset000_lumbar/labelsTs ../converted_data/Dataset000_lumbar/predsTs -djfile ../converted_data/Dataset000_lumbar/predsTs/dataset.json -pfile ../converted_data/Dataset000_lumbar/predsTs/plans.json -o ../converted_data/Dataset000_lumbar/predsTs/summary.json -np WORKERS 
+```
 
+Postprocessing for TotalSegmentator and Verse
+
+```
+python postprocess.py --i ../converted_data/Dataset000_lumbar/predsTs_totalsegmentator --o ../converted_data/Dataset000_lumbar/locsTs_totalsegmentator
+
+python postprocess.py --i ../converted_data/Dataset000_lumbar/predsTs --o ../converted_data/Dataset000_lumbar/locsTs
+```
+
+Postprocessing QA for TotalSegmentator and Verse
+```
+python postprocess_qa.py --p ../converted_data/Dataset000_lumbar/predsTs_totalsegmentator --l ../converted_data/Dataset000_lumbar/locsTs_totalsegmentator --o ../converted_data/Dataset000_lumbar/qaTs_locs_totalsegmentator
+
+python postprocess_qa.py --p ../converted_data/Dataset000_lumbar/predsTs --l ../converted_data/Dataset000_lumbar/locsTs --o ../converted_data/Dataset000_lumbar/qaTs_locs
+```
+
+End-to end inference for TotalSegmentator and Verse
+```
+python inference.py --i ../converted_data/Dataset000_lumbar/imagesTs_totalsegmentator --o ../converted_data/Dataset000_lumbar/locsTs_totalsegmentator
+
+python inference.py --i ../converted_data/Dataset000_lumbar/imagesTs --o ../converted_data/Dataset000_lumbar/locsTs
 ```
