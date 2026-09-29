@@ -1,0 +1,6 @@
+.git
+**/__pycache__
+**/*.py[cod]
+nnUNet/.git
+nnUNet/nnunetv2.egg-info
+nnUNet/documentation

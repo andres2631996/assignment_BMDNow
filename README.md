@@ -126,3 +126,35 @@ python inference.py --i ../converted_data/Dataset000_lumbar/imagesTs_totalsegmen
 
 python inference.py --i ../converted_data/Dataset000_lumbar/imagesTs --o ../converted_data/Dataset000_lumbar/locsTs
 ```
+
+Docker (end-to-end inference)
+
+Requires Docker with the NVIDIA container runtime (GPU needed). The trained model is copied into the image at build time.
+
+Build the image (the model folder is passed as a named build context)
+```
+docker build -t lumbar-centers --build-context model=../results/Dataset000_lumbar/nnUNetTrainer__nnUNetResEncUNetMPlans__3d_fullres .
+```
+
+Run inference (input images must be named <case_id>_0000.nii.gz; per case, <case_id>.json with the centers, <case_id>.nii.gz with the segmentation and <case_id>.png with the QA plot are written to the output folder)
+```
+./run_inference.sh <input_dir> <output_dir>
+```
+
+Example for TotalSegmentator and Verse
+```
+./run_inference.sh ../converted_data/Dataset000_lumbar/imagesTs_totalsegmentator ../converted_data/Dataset000_lumbar/locsTs_totalsegmentator_docker
+
+./run_inference.sh ../converted_data/Dataset000_lumbar/imagesTs ../converted_data/Dataset000_lumbar/locsTs_docker
+```
+
+Check that the container sees the GPU (should print True)
+```
+docker run --rm --gpus all --entrypoint python lumbar-centers -c "import torch; print(torch.cuda.is_available())"
+```
+
+Move the image to another machine without a registry
+```
+docker save lumbar-centers | gzip > lumbar-centers.tar.gz
+docker load < lumbar-centers.tar.gz
+```
