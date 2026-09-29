@@ -5,6 +5,8 @@ from scipy.ndimage import gaussian_filter1d, label, distance_transform_edt
 import SimpleITK as sitk
 from batchgenerators.utilities.file_and_folder_operations import save_json
 from data_io.loaders import load_orient_image, extract_spacing_np
+from utils.curation import logger_creation
+from utils.qa import qa_plot_postprocess
 from loguru import logger
 
 
@@ -82,15 +84,18 @@ def process_vertebra(image: sitk.Image, arr: np.ndarray, i: int, spacing: list):
     edt = distance_transform_edt(body, sampling=spacing)
     centre = np.unravel_index(np.argmax(edt), edt.shape)
 
-    # Obtain world coordinate in mm
-    loc = image.TransformContinuousIndexToPhysicalPoint(np.flip(centre))
+    # Obtain world coordinates in mm
+    centre = [int(c) for c in centre]
+    loc = image.TransformContinuousIndexToPhysicalPoint(centre[::-1])
 
     # Convert all locations to float, for json file saves
     out_loc = [float(l) for l in loc]
     return out_loc
 
 
-def extract_locations(arr: np.ndarray, image: sitk.Image, cid: str, outfile: str):
+def extract_locations(
+    arr: np.ndarray, image: sitk.Image, cid: str, outfile: str
+) -> dict:
     """
     Extract center locations of vertebral bodies
 
@@ -101,9 +106,16 @@ def extract_locations(arr: np.ndarray, image: sitk.Image, cid: str, outfile: str
     cid : case ID
     outfile : output file
 
+    Returns
+    -------
+    output_dict : information dict with detected locations
+
     """
     # Derive spacing information
     spacing = extract_spacing_np(image)
+
+    # Set up volume of one voxel, to discard very small or very large vertebra predictions
+    prod = np.prod(spacing)
 
     # Set up output dict. Set centroids empty by default
     output_dict = {
@@ -115,15 +127,33 @@ def extract_locations(arr: np.ndarray, image: sitk.Image, cid: str, outfile: str
     centroids = {}
     if arr.sum() > 0:
         # Some vertebra have been detected. Get centroid locations
-        idxes = np.unique(arr)
+        idxes, counts = np.unique(arr, return_counts=True)
         assert idxes.shape[0] > 1, f"No vertebra detected in '{cid}'"
-        locs = [process_vertebra(image, arr, i, spacing) for i in idxes]
-        centroids = {f"L{i}": loc for i, loc in zip(idxes, locs)}
+        idxes, counts = idxes[1:], counts[1:]  # Avoid background
+
+        # Exclude locations for very small predictions or very large predictions
+        # Low threshold: 10cm3, high threshold: 100 cm3
+        low_thr, high_thr = 10000, 120000
+        vols = counts * prod
+        valid_inds = np.where((vols >= low_thr) & (vols <= high_thr))
+        excluded_inds = np.setdiff1d(np.arange(idxes.shape[0]), valid_inds)
+        valid_idxes = idxes[valid_inds]
+
+        locs = [process_vertebra(image, arr, i, spacing) for i in valid_idxes]
+        centroids = {f"L{i}": loc for i, loc in zip(valid_idxes, locs)}
         output_dict["centroids"] = centroids
+
+        if excluded_inds.shape[0] > 0:
+            excluded_idxes = idxes[excluded_inds].tolist()
+            logger.info(
+                f"{cid}: Vertebra L({excluded_idxes}) excluded due to very small or very large size"
+            )
 
     logger.info(f"{cid} : {output_dict}")
 
     save_json(output_dict, outfile)
+
+    return output_dict
 
 
 def process_file(file: str, out: str):
@@ -136,6 +166,9 @@ def process_file(file: str, out: str):
     out : output folder
 
     """
+    # Set up logger in this worker process
+    logger_creation(out, "postprocess")
+
     cid = os.path.basename(file).replace(".nii.gz", "")
     outfile = os.path.join(out, f"{cid}.json")
 
@@ -149,4 +182,11 @@ def process_file(file: str, out: str):
         image, arr = load_orient_image(file, True, "RAS")
 
         # Extract locations
-        extract_locations(arr=arr, image=image, cid=cid, outfile=outfile)
+        centroid_info = extract_locations(
+            arr=arr, image=image, cid=cid, outfile=outfile
+        )
+
+        # Run postprocess QA
+        qa_plot_postprocess(
+            image, centroid_info["centroids"], outfile.replace(".json", ".png"), cid
+        )
