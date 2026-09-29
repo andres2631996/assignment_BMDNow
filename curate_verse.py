@@ -28,7 +28,7 @@ def main(args):
     # Create output nnU-Net structure
     output_folder_creation(outfolder, "Ts")
     # Create logger
-    logger_creation(outfolder, "verse")
+    logger_creation(outfolder, "verse_curation")
 
     # Extract all _ct.nii.gz files (raw image files)
     img_files = glob.glob(f"{infolder}/**/*_ct.nii.gz", recursive=True)

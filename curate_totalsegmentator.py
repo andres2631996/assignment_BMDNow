@@ -29,7 +29,7 @@ def main(args):
     output_folder_creation(outfolder, "Ts_totalsegmentator")
 
     # Create logger
-    logger_creation(outfolder, "totalsegmentator")
+    logger_creation(outfolder, "totalsegmentator_curation")
 
     # Extract all _ct.nii.gz files (raw image files)
     img_files = glob.glob(f"{infolder}/**/ct.nii.gz", recursive=True)
