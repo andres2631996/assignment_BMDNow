@@ -129,14 +129,25 @@ python inference.py --i ../converted_data/Dataset000_lumbar/imagesTs --o ../conv
 
 Docker (end-to-end inference)
 
-Requires Docker with the NVIDIA container runtime (GPU needed). The trained model is copied into the image at build time.
+Requires Docker with the NVIDIA container runtime (GPU needed). The trained model is copied into the image, so the image is self-contained.
 
-Build the image (the model folder is passed as a named build context)
+1. Get the image (either option A or option B, not both)
+
+A. Build it from this repo (the model folder is passed as a named build context)
 ```
 docker build -t lumbar-centers --build-context model=../results/Dataset000_lumbar/nnUNetTrainer__nnUNetResEncUNetMPlans__3d_fullres .
 ```
 
-Run inference (input images must be named <case_id>_0000.nii.gz; per case, <case_id>.json with the centers, <case_id>.nii.gz with the segmentation and <case_id>.png with the QA plot are written to the output folder)
+B. Load a previously exported image (no repo or model files needed). The export is created on the build machine with:
+```
+docker save lumbar-centers | gzip > lumbar-centers.tar.gz
+```
+and loaded on the target machine with:
+```
+docker load < lumbar-centers.tar.gz
+```
+
+2. Run inference from the host (run_inference.sh starts the container, mounts the folders and runs inference.py inside it). Input images must be named <case_id>_0000.nii.gz; per case, <case_id>.json with the centers, <case_id>.nii.gz with the segmentation and <case_id>.png with the QA plot are written to the output folder
 ```
 ./run_inference.sh <input_dir> <output_dir>
 ```
@@ -151,10 +162,4 @@ Example for TotalSegmentator and Verse
 Check that the container sees the GPU (should print True)
 ```
 docker run --rm --gpus all --entrypoint python lumbar-centers -c "import torch; print(torch.cuda.is_available())"
-```
-
-Move the image to another machine without a registry
-```
-docker save lumbar-centers | gzip > lumbar-centers.tar.gz
-docker load < lumbar-centers.tar.gz
 ```
