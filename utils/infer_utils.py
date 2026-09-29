@@ -2,13 +2,15 @@ import os, sys
 import torch
 import time
 from loguru import logger
+import SimpleITK as sitk
 
 from nnunetv2.imageio.nibabel_reader_writer import NibabelIOWithReorient
 from nnunetv2.inference.predict_from_raw_data import nnUNetPredictor
 
 
-from data_io.loaders import load_orient_image
+from data_io.loaders import load_orient_image, save_image
 from utils.postprocess_utils import extract_locations
+from utils.qa import qa_plot_postprocess
 
 
 class MySegmentation:
@@ -107,5 +109,17 @@ def process_file(file: str, out: str, cfg: dict):
 
         # Extract locations
         t1 = time.time()
-        extract_locations(pred, image, cid, outfile)
+        centroid_info = extract_locations(pred, image, cid, outfile)
+
+        # Save predicted image
+        pred_image = sitk.GetImageFromArray(pred)
+        pred_image.CopyInformation(image)
+        outfile_img = os.path.join(out, f"{cid}.nii.gz")
+        save_image(pred_image, outfile_img)
+
+        # Save QA too
+        # Run postprocess QA
+        qa_plot_postprocess(
+            image, centroid_info["centroids"], outfile.replace(".json", ".png"), cid
+        )
         logger.info(f"Elapsed location time for '{cid}' : {round(time.time()-t1,2)}")
