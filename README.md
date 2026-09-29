@@ -57,7 +57,7 @@ and loaded on the target machine with:
 docker load < lumbar-centers.tar.gz
 ```
 
-2. Run inference from the host (run_inference.sh starts the container, mounts the folders and runs inference.py inside it). Input images must be named <case_id>_0000.nii.gz; per case, <case_id>.json with the centers, <case_id>.nii.gz with the segmentation and <case_id>.png with the QA plot are written to the output folder
+2. Run inference from the host (run_inference.sh starts the container, mounts the folders and runs inference.py inside it). Input images must be named <case_id>.nii.gz; per case, <case_id>.json with the centers, <case_id>.nii.gz with the segmentation and <case_id>.png with the QA plot are written to the output folder
 ```
 ./run_inference.sh <input_dir> <output_dir>
 ```

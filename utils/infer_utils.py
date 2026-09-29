@@ -1,5 +1,6 @@
 import os, sys
 import torch
+import numpy as np
 import time
 from loguru import logger
 import SimpleITK as sitk
@@ -89,11 +90,18 @@ def predict_file(file: str, model):
     # Load image
     image_np, properties = NibabelIOWithReorient().read_images([file])
 
-    # Load image and enforce RAS orientation
-    image = load_orient_image(file, False, "RAS")
-    pred = model.process_image(image_np, properties)
+    # Heuristic to discard label files
+    unique = np.unique(image_np)
+    is_label = np.issubdtype(image_np.dtype, np.integer) and len(unique) < 100
 
-    return pred, image
+    if not (is_label):
+        # Load image and enforce RAS orientation
+        image = load_orient_image(file, False, "RAS")
+        pred = model.process_image(image_np, properties)
+
+        return pred, image
+
+    return None, None
 
 
 def process_file(file: str, out: str, model):
@@ -108,7 +116,7 @@ def process_file(file: str, out: str, model):
 
     """
     # Extract case ID
-    cid = os.path.basename(file).replace("_0000.nii.gz", "")
+    cid = os.path.basename(file).replace(".nii.gz", "")
     outfile = os.path.join(out, f"{cid}.json")
 
     if not (os.path.exists(outfile)):
@@ -122,21 +130,26 @@ def process_file(file: str, out: str, model):
         # Predict file with model information
         t1 = time.time()
         pred, image = predict_file(file, model)
-        logger.info(f"Elapsed prediction time for '{cid}' : {round(time.time()-t1,2)}")
 
-        # Extract locations
-        t1 = time.time()
-        centroid_info = extract_locations(pred, image, cid, outfile)
+        if pred is not None and image is not None:
 
-        # Save predicted image
-        pred_image = sitk.GetImageFromArray(pred)
-        pred_image.CopyInformation(image)
-        outfile_img = os.path.join(out, f"{cid}.nii.gz")
-        save_image(pred_image, outfile_img)
+            # Extract locations
+            t1 = time.time()
+            centroid_info = extract_locations(pred, image, cid, outfile)
 
-        # Save QA too
-        # Run postprocess QA
-        qa_plot_postprocess(
-            image, centroid_info["centroids"], outfile.replace(".json", ".png"), cid
-        )
-        logger.info(f"Elapsed location time for '{cid}' : {round(time.time()-t1,2)}")
+            # Save predicted image
+            pred_image = sitk.GetImageFromArray(pred)
+            pred_image.CopyInformation(image)
+            outfile_img = os.path.join(out, f"{cid}.nii.gz")
+            save_image(pred_image, outfile_img)
+
+            # Save QA too
+            # Run postprocess QA
+            qa_plot_postprocess(
+                image, centroid_info["centroids"], outfile.replace(".json", ".png"), cid
+            )
+            logger.info(
+                f"Elapsed location time for '{cid}' : {round(time.time()-t1,2)}"
+            )
+        else:
+            logger.info(f"File '{file}' seems to be a label file, skipping...")

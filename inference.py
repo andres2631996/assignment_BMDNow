@@ -18,7 +18,7 @@ def main(args):
     ), f"Parent output folder '{os.path.dirname(outfolder)}' does not exist"
 
     # Extract all .nii.gz files (predicted files)
-    img_files = glob.glob(f"{infolder}/**/*_0000.nii.gz", recursive=True)
+    img_files = glob.glob(f"{infolder}/**/*.nii.gz", recursive=True)
 
     # Create output folder if it does not exist
     if not (os.path.exists(outfolder)):
