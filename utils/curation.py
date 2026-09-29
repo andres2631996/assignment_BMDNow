@@ -2,9 +2,17 @@ import os, sys
 import numpy as np
 import SimpleITK as sitk
 from loguru import logger
-from data_io.loaders import load_image, save_image, load_label_files_totalsegmentator
+from data_io.loaders import (
+    load_image,
+    save_image,
+    load_label_files_totalsegmentator,
+    load_spinal_cord_file_totalsegmentator,
+)
 from utils.qa import check_same_geometry, qa_plot
 import time
+
+# Log file configured in the current process (each joblib worker is a separate process)
+_configured_log_file = None
 
 
 def output_folder_creation(out: str, tag: str = "Tr"):
@@ -46,8 +54,15 @@ def logger_creation(out: str, tag: str):
     tag : tag for log file ('verse' or 'totalsegmentator')
 
     """
+    global _configured_log_file
+    log_file = os.path.join(out, f"{tag}_curation.log")
+    if _configured_log_file == log_file:
+        # Already configured in this process
+        return
     assert os.path.exists(out), f"Output folder '{out}' does not exist"
-    logger.add(os.path.join(out, f"{tag}_curation.log"))
+    logger.remove()
+    logger.add(log_file)
+    _configured_log_file = log_file
 
 
 def relabel_verse(label_arr: np.ndarray) -> np.ndarray:
@@ -186,6 +201,9 @@ def process_image_verse(file: str, out: str, orient: str):
     Saved image in nnUNet format
 
     """
+    # Set up logger in this worker process
+    logger_creation(out, "verse")
+
     # Set up outfile, if outfile exists, skip
     cid_folder = os.path.dirname(file)  # Raw image CID folder
     cid = os.path.basename(file).replace("_ct.nii.gz", "")
@@ -283,6 +301,25 @@ def image_saving(
     qa_plot(image, label, outfile_qa, cid)
 
 
+def derive_spinal_info_totalsegmentator(folder: str):
+    """
+    From data folder of case ID, derive whether file contains
+    spinal cord or not for TotalSegmentator
+
+    Params
+    ------
+    folder : TotalSegmentator case ID folder
+
+    Returns
+    -------
+    contains_spinal_cord : image contains or not spinal cord
+
+    """
+    spinal_file = os.path.join(folder, "segmentations", "spinal_cord.nii.gz")
+    contains_spinal_cord = load_spinal_cord_file_totalsegmentator(spinal_file)
+    return contains_spinal_cord
+
+
 def process_image_totalsegmentator(file: str, out: str, orient: str, split: dict):
     """
     Process raw image from TotalSegmentator
@@ -299,6 +336,9 @@ def process_image_totalsegmentator(file: str, out: str, orient: str, split: dict
     Saved image in nnUNet format
 
     """
+    # Set up logger in this worker process
+    logger_creation(out, "totalsegmentator")
+
     # Set up outfile, if outfile exists, skip
     cid_folder = os.path.dirname(file)  # Raw image CID folder
     cid = os.path.basename(cid_folder)
@@ -318,18 +358,22 @@ def process_image_totalsegmentator(file: str, out: str, orient: str, split: dict
         logger.info(f"Processing {cid}")
         t1 = time.time()
 
-        # Derive label image
+        # Derive label files to process and spinal cord file
         label_files = derive_label_totalsegmentator(cid_folder=cid_folder)
-        # Set orienter:
-        orienter = sitk.DICOMOrientImageFilter()
-        orienter.SetDesiredCoordinateOrientation(orient)
+        contains_spinal_cord = derive_spinal_info_totalsegmentator(folder=cid_folder)
+        if contains_spinal_cord:
+            # Set orienter:
+            orienter = sitk.DICOMOrientImageFilter()
+            orienter.SetDesiredCoordinateOrientation(orient)
 
-        # Process image and label sitk objects (fix orientation and label information)
-        image, label = image_label_process_totalsegmentator(
-            file, label_files, cid, orienter
-        )
+            # Process image and label sitk objects (fix orientation and label information)
+            image, label = image_label_process_totalsegmentator(
+                file, label_files, cid, orienter
+            )
 
-        # Save image, label, and run QA
-        image_saving(image, label, outfile_img, outfile_label, outfile_qa, cid)
+            # Save image, label, and run QA
+            image_saving(image, label, outfile_img, outfile_label, outfile_qa, cid)
 
-        logger.info(f"Time ellapsed: {round(time.time()-t1,2)} sec")
+            logger.info(f"Time ellapsed: {round(time.time()-t1,2)} sec")
+        else:
+            logger.info(f"No spinal cord information for case ID '{cid}', skipping...")

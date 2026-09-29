@@ -42,6 +42,27 @@ def save_image(image: sitk.Image, file: str):
     sitk.WriteImage(image, file)
 
 
+def load_spinal_cord_file_totalsegmentator(file: str) -> bool:
+    """
+    Load spinal cord segmentation file. If file contains spinal cord,
+    process case, else split
+
+    Params
+    ------
+    file : file to load
+
+
+    Returns
+    -------
+    contains_cord : whether case contains spinal cord or not
+
+    """
+
+    _, arr = load_image(file=file, arr=True)
+    contains_cord = arr.sum() > 0
+    return contains_cord
+
+
 def load_label_files_totalsegmentator(image: sitk.Image, files: list) -> sitk.Image:
     """
     Combine TotalSegmentator lumbar vertebra masks into one label image.
@@ -55,6 +76,8 @@ def load_label_files_totalsegmentator(image: sitk.Image, files: list) -> sitk.Im
     -------
     label_image : label image with L1=1, L2=2, ...; overlapping voxels set to 0
     """
+
+    # Load reference images and prepare arrays
     ref = sitk.GetArrayFromImage(image)
     label = np.zeros(ref.shape, dtype=np.uint8)
     count = np.zeros(ref.shape, dtype=np.uint8)
