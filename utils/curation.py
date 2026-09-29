@@ -46,16 +46,16 @@ def output_folder_creation(out: str, tag: str = "Tr"):
 
 def logger_creation(out: str, tag: str):
     """
-    Create logger for Verse
+    Create file logger (once per process)
 
     Params
     ------
     out : output folder
-    tag : tag for log file ('verse' or 'totalsegmentator')
+    tag : tag for log file, saved as '<tag>.log'
 
     """
     global _configured_log_file
-    log_file = os.path.join(out, f"{tag}_curation.log")
+    log_file = os.path.join(out, f"{tag}.log")
     if _configured_log_file == log_file:
         # Already configured in this process
         return
@@ -202,7 +202,7 @@ def process_image_verse(file: str, out: str, orient: str):
 
     """
     # Set up logger in this worker process
-    logger_creation(out, "verse")
+    logger_creation(out, "verse_curation")
 
     # Set up outfile, if outfile exists, skip
     cid_folder = os.path.dirname(file)  # Raw image CID folder
@@ -337,7 +337,7 @@ def process_image_totalsegmentator(file: str, out: str, orient: str, split: dict
 
     """
     # Set up logger in this worker process
-    logger_creation(out, "totalsegmentator")
+    logger_creation(out, "totalsegmentator_curation")
 
     # Set up outfile, if outfile exists, skip
     cid_folder = os.path.dirname(file)  # Raw image CID folder
