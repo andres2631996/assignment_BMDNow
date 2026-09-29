@@ -43,13 +43,27 @@ No orthonormal direction from TotalSegm: weird, also in MITK reader
 No official TotalSegmentator validation set 
 Keeping only cases with spinal cord: 1830 --> 1688 / Test set: 109 --> 108
 
+SimpleITK and Numpy flipped coordinates!!
+
 
 Runs
 ```
-python code/curate_verse.py --i /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/raw_data/verse --orient RAS --o /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar
-python code/curate_totalsegmentator.py --i /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/raw_data/Totalsegmentator_dataset_v300 --orient RAS --o /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar
+python curate_verse.py --i /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/raw_data/verse --orient RAS --o /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar
+
+python curate_totalsegmentator.py --i /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/raw_data/Totalsegmentator_dataset_v300 --orient RAS --o /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar
+
 nnUNetv2_extract_fingerprint -d 000 -np 4
+
 nnUNetv2_plan_experiment -d 000 -pl nnUNetPlannerResEncM
+
 nnUNetv2_preprocess -d 000 -plans_name nnUNetResEncUNetMPlans -c 3d_fullres -np 2
+
+nnUNetv2_predict -o /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/predsTs_totalsegmentator -i /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/imagesTs_totalsegmentator -d 000 -tr nnUNetTrainer -c 3d_fullres -f 0 -npp 1 -nps 1 -p nnUNetResEncUNetMPlans
+
+nnUNetv2_predict -o /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/predsTs -i /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/imagesTs -d 000 -tr nnUNetTrainer -c 3d_fullres -f 0 -npp 1 -nps 1 -p nnUNetResEncUNetMPlans
+
+nnUNetv2_evaluate_folder /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/labelsTs_totalsegmentator /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/predsTs_totalsegmentator -djfile /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/predsTs_totalsegmentator/dataset.json -pfile /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/predsTs_totalsegmentator/plans.json -o /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/predsTs_totalsegmentator/summary.json -np 4 
+
+nnUNetv2_evaluate_folder /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/labelsTs /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/predsTs -djfile /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/predsTs/dataset.json -pfile /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/predsTs/plans.json -o /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/predsTs/summary.json -np 4 
 
 ```
