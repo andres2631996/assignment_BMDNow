@@ -1,6 +1,6 @@
-Installation instructions
+Repo for lumbar vertebrae body center estimation, trained and internally tested on TotalSegmentator (https://zenodo.org/records/22688904) and externally tested on Verse (https://github.com/anjany/verse#data)
 
-Conda environment
+Installation instructions
 
 ```
 conda create -n nnunet_assign python=3.11
@@ -13,9 +13,9 @@ pip install -r requirements.txt
 
 Path setup
 ```
-export nnUNet_raw=/media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data
-export nnUNet_preprocessed=/home/a870a/preprocessed_assignment
-export nnUNet_results=/media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/results
+export nnUNet_raw=../converted_data
+export nnUNet_preprocessed=../preprocessed_data
+export nnUNet_results=../results
 export nnUNet_n_proc_DA=4
 ```
 
@@ -25,8 +25,10 @@ Datasets:
 TotalSegmentator (v300): https://zenodo.org/records/22688904
 Verse (2019+2020): https://github.com/anjany/verse#data
 
-Download TotalSegmentator in: assignment/raw_data/totalsegmentator
-Download Verse in: assignment/raw_data/verse
+Download instructions:
+
+Download TotalSegmentator in: ../raw_data/totalsegmentator
+Download Verse in: ../raw_data/verse
 
 Unzip all related .zip files 
 
@@ -45,25 +47,59 @@ Keeping only cases with spinal cord: 1830 --> 1688 / Test set: 109 --> 108
 
 SimpleITK and Numpy flipped coordinates!!
 
+Many issues with CUT images, and also with poor resolution (large FOV images)
 
-Runs
+
+Runs (end-to-end, after training lumbar vertebra segmentation)
 ```
-python curate_verse.py --i /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/raw_data/verse --orient RAS --o /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar
 
-python curate_totalsegmentator.py --i /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/raw_data/Totalsegmentator_dataset_v300 --orient RAS --o /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar
 
-nnUNetv2_extract_fingerprint -d 000 -np 4
+```
+
+Runs (step by step)
+
+Curate Verse as imagesTs, labelsTs
+```
+python curate_verse.py --i ../raw_data/verse --orient RAS --o ../converted_data/Dataset000_lumbar
+```
+
+Curate TotalSegmentator as imagesTr, labelsTr, imagesTs\_totalsegmentator, labelsTs\_segmentator (here done with version 3.0.0, but can be done with other versions, too)
+
+```
+python curate_totalsegmentator.py --i ../raw_data/Totalsegmentator_dataset_v300 --orient RAS --o ../converted_data/Dataset000_lumbar
+
+```
+
+nnU-Net-based preprocessing (parallel workers can be adjusted)
+
+```
+nnUNetv2_extract_fingerprint -d 000 -np WORKERS
 
 nnUNetv2_plan_experiment -d 000 -pl nnUNetPlannerResEncM
 
-nnUNetv2_preprocess -d 000 -plans_name nnUNetResEncUNetMPlans -c 3d_fullres -np 2
+nnUNetv2_preprocess -d 000 -plans_name nnUNetResEncUNetMPlans -c 3d_fullres -np WORKERS
+```
 
-nnUNetv2_predict -o /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/predsTs_totalsegmentator -i /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/imagesTs_totalsegmentator -d 000 -tr nnUNetTrainer -c 3d_fullres -f 0 -npp 1 -nps 1 -p nnUNetResEncUNetMPlans
+nnUNet-based training
+
+```
+nnUNetv2_train 000 3d_fullres 0 -p nnUNetResEncUNetMPlans -tr nnUNetTrainer
+
+```
+
+nnUNet-based prediction of internal TotalSegmentator test set and external Verse test set (WORKERS here set to 1, can be modified)
+
+```
+nnUNetv2_predict -o ../converted_data/Dataset000_lumbar/predsTs_totalsegmentator -i ../converted_data/Dataset000_lumbar/imagesTs_totalsegmentator -d 000 -tr nnUNetTrainer -c 3d_fullres -f 0 -npp 1 -nps 1 -p nnUNetResEncUNetMPlans
 
 nnUNetv2_predict -o /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/predsTs -i /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/imagesTs -d 000 -tr nnUNetTrainer -c 3d_fullres -f 0 -npp 1 -nps 1 -p nnUNetResEncUNetMPlans
+```
 
-nnUNetv2_evaluate_folder /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/labelsTs_totalsegmentator /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/predsTs_totalsegmentator -djfile /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/predsTs_totalsegmentator/dataset.json -pfile /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/predsTs_totalsegmentator/plans.json -o /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/predsTs_totalsegmentator/summary.json -np 4 
+nnU-Net-based evaluation of internal TotalSegmentator test set and external Verse test set
 
-nnUNetv2_evaluate_folder /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/labelsTs /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/predsTs -djfile /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/predsTs/dataset.json -pfile /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/predsTs/plans.json -o /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/predsTs/summary.json -np 4 
+```
+nnUNetv2_evaluate_folder ../converted_data/Dataset000_lumbar/labelsTs_totalsegmentator ../converted_data/Dataset000_lumbar/predsTs_totalsegmentator -djfile ../converted_data/Dataset000_lumbar/predsTs_totalsegmentator/dataset.json -pfile ../converted_data/Dataset000_lumbar/predsTs_totalsegmentator/plans.json -o ../converted_data/Dataset000_lumbar/predsTs_totalsegmentator/summary.json -np WORKERS 
+
+nnUNetv2_evaluate_folder ../converted_data/Dataset000_lumbar/labelsTs ../converted_data/Dataset000_lumbar/predsTs -djfile ../converted_data/Dataset000_lumbar/predsTs/dataset.json -pfile ../converted_data/Dataset000_lumbar/predsTs/plans.json -o ../converted_data/Dataset000_lumbar/predsTs/summary.json -np WORKERS 
 
 ```
