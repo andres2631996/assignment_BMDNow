@@ -45,14 +45,40 @@ class MySegmentation:
         return ret
 
 
-def predict_file(file: str, cfg: dict):
+def cfg2model(cfg: dict):
     """
-    Predict file with model provided in configuration path
+    Convert config file with model information to actual model object
+
+    Params
+    ------
+    cfg : model configuration file
+
+    Returns
+    -------
+    model : final model object
+
+    """
+
+    # Set up model
+    assert "model_dir" in list(cfg.keys()), "Configuration lacks 'model_dir' field"
+    # model_dir = <nnunet_model_dir>/<task>/<model_name>
+    model_dir = os.path.normpath(cfg["model_dir"])
+    model_name = os.path.basename(model_dir)
+    task = os.path.basename(os.path.dirname(model_dir))
+    nnunet_model_dir = os.path.dirname(os.path.dirname(model_dir))
+    model = MySegmentation(task, nnunet_model_dir, model_name)
+
+    return model
+
+
+def predict_file(file: str, model):
+    """
+    Predict file with model object
 
     Params
     ------
     file : file to be predicted
-    cfg : configuration with model path
+    model : model object
 
     Returns
     -------
@@ -65,21 +91,12 @@ def predict_file(file: str, cfg: dict):
 
     # Load image and enforce RAS orientation
     image = load_orient_image(file, False, "RAS")
-
-    # Set up model
-    assert "model_dir" in list(cfg.keys()), "Configuration lacks 'model_dir' field"
-    model_dir = cfg["model_dir"]
-    split_info = model_dir.split("/")
-    task = split_info[2]
-    nnunet_model_dir = "/".join(split_info[:1])
-    model_name = split_info[-1]
-    model = MySegmentation(task, nnunet_model_dir, model_name)
     pred = model.process_image(image_np, properties)
 
     return pred, image
 
 
-def process_file(file: str, out: str, cfg: dict):
+def process_file(file: str, out: str, model):
     """
     Process file for inference
 
@@ -87,7 +104,7 @@ def process_file(file: str, out: str, cfg: dict):
     ------
     file : input image file
     out : output folder
-    cfg : model configuration information
+    model : model information
 
     """
     # Extract case ID
@@ -104,7 +121,7 @@ def process_file(file: str, out: str, cfg: dict):
 
         # Predict file with model information
         t1 = time.time()
-        pred, image = predict_file(file, cfg)
+        pred, image = predict_file(file, model)
         logger.info(f"Elapsed prediction time for '{cid}' : {round(time.time()-t1,2)}")
 
         # Extract locations
