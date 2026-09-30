@@ -49,30 +49,26 @@ def qa_plot(image: sitk.Image, label: sitk.Image, qa_file: str, cid: str):
     img = sitk.GetArrayFromImage(image)
     mask_arr = sitk.GetArrayFromImage(label)
 
-    if mask_arr.sum() > 0:
-        ind = np.where(mask_arr > 0)
-        ind = np.median(ind, 0)
-    else:
-        ind = np.array(img.shape) // 2
+    ind = np.array(img.shape) // 2
 
     plt.figure()
     plt.subplot(321)
-    plt.imshow(img[ind[0] // 2], cmap="gray")
+    plt.imshow(img[ind[0]], cmap="gray")
     plt.colorbar()
     plt.subplot(322)
-    plt.imshow(mask_arr[ind[0] // 2], cmap="gray")
+    plt.imshow(mask_arr[ind[0]], cmap="gray")
     plt.colorbar()
     plt.subplot(323)
-    plt.imshow(img[:, ind[1] // 2], cmap="gray")
+    plt.imshow(img[:, ind[1]], cmap="gray")
     plt.colorbar()
     plt.subplot(324)
-    plt.imshow(mask_arr[:, ind[1] // 2], cmap="gray")
+    plt.imshow(mask_arr[:, ind[1]], cmap="gray")
     plt.colorbar()
     plt.subplot(325)
-    plt.imshow(img[:, :, ind[2] // 2], cmap="gray")
+    plt.imshow(img[:, :, ind[2]], cmap="gray")
     plt.colorbar()
     plt.subplot(326)
-    plt.imshow(mask_arr[:, :, ind[2] // 2], cmap="gray")
+    plt.imshow(mask_arr[:, :, ind[2]], cmap="gray")
     plt.colorbar()
     plt.suptitle(cid)
     plt.savefig(qa_file)
