@@ -50,7 +50,7 @@ docker build -t lumbar-centers --build-context model=../results/Dataset000_lumba
 
 B. Load a previously exported image (no repo or model files needed). The export is created on the build machine with:
 ```
-docker save lumbar-centers | gzip > lumbar-centers.tar.gz
+docker save lumbar-centers | gzip > /path/to/lumbar-centers.tar.gz
 ```
 and loaded on the target machine with:
 ```
