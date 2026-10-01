@@ -5,6 +5,7 @@ Repo for lumbar vertebrae body center estimation, trained and internally tested 
 # Installation instructions
 
 ```
+git clone --recurse-submodules https://github.com/andres2631996/assignment_BMDNow.git
 conda create -n nnunet_assign python=3.11
 conda activate nnunet_assign
 pip install torch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cu126
