@@ -45,7 +45,7 @@ Requires Docker with the NVIDIA container runtime (GPU needed). The trained mode
 
 A. Build it from this repo (the model folder is passed as a named build context)
 ```
-docker build -t lumbar-centers --build-context model=../results/Dataset000_lumbar/nnUNetTrainer__nnUNetResEncUNetMPlans__3d_fullres .
+docker build -t lumbar-centers --build-context model=../path/to/model/nnUNetTrainer__nnUNetResEncUNetMPlans__3d_fullres .
 ```
 
 B. Load a previously exported image (no repo or model files needed). The export is created on the build machine with:
@@ -61,12 +61,16 @@ docker load < lumbar-centers.tar.gz
 ```
 ./run_inference.sh <input_dir> <output_dir>
 ```
+If you run the Docker container on a mounted drive and the option above does not work, try otherwise with:
+```
+bash run_inference.sh <input_dir> <output_dir>
+```
 
 Example for TotalSegmentator and Verse
 ```
-./run_inference.sh ../converted_data/Dataset000_lumbar/imagesTs_totalsegmentator ../converted_data/Dataset000_lumbar/locsTs_totalsegmentator_docker
+./run_inference.sh ../raw_data/TotalSegmentator_dataset_v300 ../locsTs_totalsegmentator_docker
 
-./run_inference.sh ../converted_data/Dataset000_lumbar/imagesTs ../converted_data/Dataset000_lumbar/locsTs_docker
+./run_inference.sh ../raw_data/verse ../locsTs_docker
 ```
 
 Check that the container sees the GPU (should print True)
