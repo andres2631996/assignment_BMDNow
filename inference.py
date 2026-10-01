@@ -5,6 +5,7 @@ import glob
 from batchgenerators.utilities.file_and_folder_operations import load_json
 from utils.infer_utils import process_file, cfg2model
 from utils.curation import logger_creation
+from loguru import logger
 
 
 def main(args):
@@ -36,7 +37,10 @@ def main(args):
 
     # Process files in series
     for file in img_files:
-        process_file(file, outfolder, model)
+        try:
+            process_file(file, outfolder, model)
+        except:
+            logger.error(f"Something wrong happened with file '{file}', skipping...")
 
 
 def get_args():
