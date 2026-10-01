@@ -39,8 +39,10 @@ def main(args):
     for file in img_files:
         try:
             process_file(file, outfolder, model)
-        except:
-            logger.error(f"Something wrong happened with file '{file}', skipping...")
+        except Exception as e:
+            logger.error(
+                f"Something wrong happened with file '{file}', skipping... Error: {e}"
+            )
 
 
 def get_args():
