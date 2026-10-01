@@ -119,12 +119,19 @@ nnUNetv2_predict -o ../converted_data/Dataset000_lumbar/predsTs_totalsegmentator
 nnUNetv2_predict -o /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/predsTs -i /media/E132-Projekte/Projects/2025_MartinezMora_SSLBrain/assignment/converted_data/Dataset000_lumbar/imagesTs -d 000 -tr nnUNetTrainer -c 3d_fullres -f 0 -npp 1 -nps 1 -p nnUNetResEncUNetMPlans
 ```
 
-nnU-Net-based evaluation of internal TotalSegmentator test set and external Verse test set
+nnU-Net-based evaluation of internal TotalSegmentator test set and external Verse test set. It generates a file called summary.json with metrics for the different lumbar vertebrae
 
 ```
 nnUNetv2_evaluate_folder ../converted_data/Dataset000_lumbar/labelsTs_totalsegmentator ../converted_data/Dataset000_lumbar/predsTs_totalsegmentator -djfile ../converted_data/Dataset000_lumbar/predsTs_totalsegmentator/dataset.json -pfile ../converted_data/Dataset000_lumbar/predsTs_totalsegmentator/plans.json -o ../converted_data/Dataset000_lumbar/predsTs_totalsegmentator/summary.json -np WORKERS 
 
 nnUNetv2_evaluate_folder ../converted_data/Dataset000_lumbar/labelsTs ../converted_data/Dataset000_lumbar/predsTs -djfile ../converted_data/Dataset000_lumbar/predsTs/dataset.json -pfile ../converted_data/Dataset000_lumbar/predsTs/plans.json -o ../converted_data/Dataset000_lumbar/predsTs/summary.json -np WORKERS 
+```
+
+Segmentation metrics bootstrapping for TotalSegmentator test set and Verse test set (after running nnU-Net based evaluation). It generates a file called summary_bootstrapping.json with confidence intervals for Dice and IoU metrics for the different lumbar vertebrae
+```
+python utils/bootstrap_metrics.py --i ../converted_data/Dataset000_lumbar/predsTs_totalsegmentator/summary.json --n 1000 --np WORKERS
+
+python utils/bootstrap_metrics.py --i ../converted_data/Dataset000_lumbar/predsTs/summary.json --n 1000 --np WORKERS
 ```
 
 Postprocessing for TotalSegmentator and Verse
