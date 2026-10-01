@@ -26,7 +26,8 @@ def extract_ids(df: dict) -> dict:
         # Extract ID
         assert "prediction_file" in list(d.keys()), "'prediction_file' not in key"
         basefile = os.path.basename(d["prediction_file"])
-        cid = basefile.split("_")[0]
+        cid = basefile.split("_")[0].replace(".nii.gz", "")
+
         if "_" in basefile:
             # This CID has several cases
             # Set all possible cases in a list of dicts, for later sampling during bootstrapping
@@ -145,6 +146,7 @@ def extract_stats(agg: list) -> dict:
 def main(args):
     infile = args.i
     n = args.n
+    id_file = args.ids
     workers = args.np
 
     assert os.path.exists(infile) and infile.endswith(
@@ -159,6 +161,14 @@ def main(args):
 
     # Clean dictionary to handle multi instance cases
     clean = extract_ids(df)
+
+    # If ids_file exists, bootstrap only for selected IDs
+    if os.path.exists(id_file) and id_file.endswith(".txt"):
+        ids = np.loadtxt(id_file, dtype=str).tolist()
+        clean = {i: val for i, val in clean.items() if i in ids}
+        outfile = outfile.replace(
+            ".json", f"_{os.path.basename(id_file).replace('.txt', '')}.json"
+        )
 
     # Bootstrapping
     results = Parallel(workers)(delayed(bootstrap_iter)(clean) for _ in range(n))
@@ -179,6 +189,13 @@ def get_args():
     parser.add_argument("--i", help="Input file", required=True, type=str)
     parser.add_argument(
         "--n", help="# bootstrap iterations", required=False, type=int, default=1000
+    )
+    parser.add_argument(
+        "--ids",
+        help="Input file with ID information",
+        required=False,
+        default="",
+        type=str,
     )
     parser.add_argument("--np", help="# workers", required=False, type=int, default=4)
     args = parser.parse_args()
